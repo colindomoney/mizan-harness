@@ -26,6 +26,25 @@ Counterfactual/symmetry prompts come in twos: the same question asked with the s
 loader rejects orphaned (×1) or over-filled (×3+) pairs, and the results viewer uses `pair_id`
 to render the two sides adjacent.
 
+## Run record (`runs/<timestamp>/records.jsonl`)
+
+Defined in [`mizan.records.RunRecord`](../src/mizan/records.py). One JSON object per line,
+one line per prompt→model call — including failed calls, which carry `error` and null
+response fields instead of crashing or silently dropping.
+
+| Field | Type | Notes |
+|---|---|---|
+| `prompt_id`, `query` | str | Which prompt ran (id + the exact text sent). |
+| `model`, `provider` | str | Gateway model slug + provider, from the registry. |
+| `params` | object | `temperature`, `system_prompt`, `web_search`, `max_output_tokens` — the exact call params. |
+| `timestamp` | datetime | UTC, call start. |
+| `response_text` | str \| null | Model output text; null on failure. |
+| `raw` | dict \| null | Full gateway payload, untrimmed. |
+| `tokens_in`, `tokens_out` | int \| null | Token usage. |
+| `latency_ms` | int \| null | Wall-clock call latency. |
+| `error` | str \| null | Set when the call failed. |
+| `refusal_flag` | str \| null | Heuristic capture-only flag (e.g. `answered` / `refused` / `hedged`), populated by the flagging pass. **Not** a quality or bias judgement. |
+
 ## Provenance
 
 The bank is curated in Notion (the editing surface). `prompts/bank.jsonl` is a frozen, committed
