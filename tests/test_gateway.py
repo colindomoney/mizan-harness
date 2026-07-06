@@ -1,34 +1,10 @@
-from types import SimpleNamespace
-
+import httpx
 import openai
 import pytest
 
+from conftest import FakeCompletions, fake_client
 from mizan import gateway
 from mizan.gateway import GatewayError, Response, RunParams, run
-
-
-class FakeCompletions:
-    """Stands in for client.chat.completions; records the request it saw."""
-
-    def __init__(self, *, reply: str = "hello", error: Exception | None = None) -> None:
-        self.reply = reply
-        self.error = error
-        self.last_kwargs: dict | None = None
-
-    def create(self, **kwargs):
-        self.last_kwargs = kwargs
-        if self.error:
-            raise self.error
-        return SimpleNamespace(
-            choices=[SimpleNamespace(message=SimpleNamespace(content=self.reply))],
-            model=kwargs["model"],
-            usage=SimpleNamespace(prompt_tokens=12, completion_tokens=34),
-            model_dump=lambda: {"id": "cmpl-fake", "model": kwargs["model"]},
-        )
-
-
-def fake_client(completions: FakeCompletions):
-    return SimpleNamespace(chat=SimpleNamespace(completions=completions))
 
 
 def test_run_returns_structured_response() -> None:
@@ -63,6 +39,21 @@ def test_api_error_becomes_gateway_error() -> None:
     completions = FakeCompletions(error=openai.OpenAIError("no such model"))
     with pytest.raises(GatewayError, match="no such model"):
         run("q", "bad/model-id", client=fake_client(completions))
+
+
+def make_status_error(status: int, headers: dict | None = None) -> openai.APIStatusError:
+    response = httpx.Response(
+        status, headers=headers, request=httpx.Request("POST", "https://gw/v1")
+    )
+    return openai.APIStatusError(f"http {status}", response=response, body=None)
+
+
+def test_status_error_carries_status_and_retry_after() -> None:
+    completions = FakeCompletions(error=make_status_error(429, {"retry-after": "7"}))
+    with pytest.raises(GatewayError) as excinfo:
+        run("q", "openai/gpt-5.1", client=fake_client(completions))
+    assert excinfo.value.status_code == 429
+    assert excinfo.value.retry_after == 7.0
 
 
 def test_missing_key_raises_clean_error(monkeypatch: pytest.MonkeyPatch) -> None:

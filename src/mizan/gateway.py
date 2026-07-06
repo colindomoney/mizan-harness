@@ -40,11 +40,24 @@ class Response(BaseModel):
 
 
 class GatewayError(Exception):
-    """A gateway call failed in a known way (bad model id, auth, API error)."""
+    """A gateway call failed in a known way (bad model id, auth, API error).
 
-    def __init__(self, message: str, *, model: str | None = None) -> None:
+    ``status_code``/``retry_after`` let callers distinguish transient failures
+    (429, 5xx) worth retrying from permanent ones (bad model id, auth).
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        model: str | None = None,
+        status_code: int | None = None,
+        retry_after: float | None = None,
+    ) -> None:
         super().__init__(message)
         self.model = model
+        self.status_code = status_code
+        self.retry_after = retry_after
 
 
 def make_client() -> openai.OpenAI:
@@ -86,6 +99,15 @@ def run(
             temperature=params.temperature,
             max_tokens=params.max_output_tokens,
         )
+    except openai.APIStatusError as exc:
+        header = exc.response.headers.get("retry-after")
+        retry_after = float(header) if header and header.replace(".", "", 1).isdigit() else None
+        raise GatewayError(
+            f"gateway call failed for {model}: {exc}",
+            model=model,
+            status_code=exc.status_code,
+            retry_after=retry_after,
+        ) from exc
     except openai.OpenAIError as exc:
         raise GatewayError(f"gateway call failed for {model}: {exc}", model=model) from exc
     latency_ms = int((time.perf_counter() - start) * 1000)
