@@ -1,5 +1,7 @@
 # mizan-harness
 
+[![CI](https://github.com/colindomoney/mizan-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/colindomoney/mizan-harness/actions/workflows/ci.yml)
+
 Mizan is a discovery harness that runs a curated bank of Palestine-related prompts across
 frontier LLMs (GPT, Claude, Gemini, Grok, Llama) via the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway),
 capturing every prompt→model call as a structured, reproducible record.
