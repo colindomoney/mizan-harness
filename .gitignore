@@ -1,0 +1,19 @@
+# Environment / secrets
+.env
+
+# Run outputs
+runs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# OS
+.DS_Store
