@@ -1,0 +1,43 @@
+{
+  "bank_path": "prompts/bank.jsonl",
+  "bank_sha256": "6f66b4f79ec07b62f45fb84a4da137c16bcc727a79f228831e8104f778e6cef0",
+  "models": [
+    {
+      "id": "openai/gpt-5.5",
+      "provider": "openai",
+      "display_name": "GPT-5.5"
+    },
+    {
+      "id": "anthropic/claude-sonnet-5",
+      "provider": "anthropic",
+      "display_name": "Claude Sonnet 5"
+    },
+    {
+      "id": "google/gemini-3.1-pro-preview",
+      "provider": "google",
+      "display_name": "Gemini 3.1 Pro (preview)"
+    },
+    {
+      "id": "xai/grok-4.3",
+      "provider": "xai",
+      "display_name": "Grok 4.3"
+    },
+    {
+      "id": "meta/llama-4-maverick",
+      "provider": "meta",
+      "display_name": "Llama 4 Maverick"
+    }
+  ],
+  "params": {
+    "temperature": 0.0,
+    "system_prompt": null,
+    "web_search": false,
+    "max_output_tokens": 4096
+  },
+  "total_cells": 285,
+  "started_at": "2026-07-06T22:43:59.446102+00:00",
+  "finished_at": "2026-07-07T10:53:38.355773+00:00",
+  "completed": 285,
+  "errors": 0,
+  "notes": "Two runner processes wrote concurrently on 2026-07-07 (the 2026-07-06 process survived overnight and overlapped a --resume); records.jsonl deduplicated to one record per cell (prefer non-error, then earliest), raw stream kept in records-raw.jsonl. Two meta/llama-4-maverick cells hit transient Bedrock geo-restriction 400s in one process; both captured cleanly in the other."
+}
