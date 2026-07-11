@@ -109,6 +109,22 @@ def test_run_matrix_full_run_with_manifest(tmp_path: Path) -> None:
     assert manifest["finished_at"] is not None
 
 
+def test_run_matrix_reports_progress_per_captured_cell(tmp_path: Path) -> None:
+    bank, registry = write_fixtures(tmp_path)
+    calls: list[tuple[str, str, int, int]] = []
+    run_matrix(
+        bank,
+        RunParams(),
+        registry_path=registry,
+        out_base=tmp_path / "runs",
+        client=fake_client(FakeCompletions()),
+        on_progress=lambda rec, done, total: calls.append((rec.prompt_id, rec.model, done, total)),
+    )
+    assert len(calls) == 6
+    assert [c[2] for c in calls] == [1, 2, 3, 4, 5, 6]
+    assert all(c[3] == 6 for c in calls)
+
+
 def test_run_matrix_resume_skips_captured_cells(tmp_path: Path) -> None:
     bank, registry = write_fixtures(tmp_path)
     first = FakeCompletions()

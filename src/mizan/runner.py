@@ -11,7 +11,9 @@ skipped on resume — an interrupted run never loses progress.
 
 import hashlib
 import json
+import sys
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -106,8 +108,14 @@ def run_matrix(
     client: openai.OpenAI | None = None,
     sleep=time.sleep,
     limit: int | None = None,
+    on_progress: Callable[[RunRecord, int, int], None] | None = None,
 ) -> Path:
-    """Run every bank prompt against every registry model; return the run dir."""
+    """Run every bank prompt against every registry model; return the run dir.
+
+    ``on_progress`` is called after each captured cell with
+    ``(record, completed_cells, total_cells)``; skipped (already-captured) cells
+    don't trigger it.
+    """
     prompts = load_bank(bank_path)[:limit]
     models = load_registry(registry_path)
     client = client or gateway.make_client()
@@ -146,12 +154,29 @@ def run_matrix(
                 out.flush()
                 errors += record.error is not None
                 done.add((prompt.id, model.id))
+                if on_progress:
+                    on_progress(record, len(done), manifest["total_cells"])
 
     manifest["finished_at"] = datetime.now(UTC).isoformat()
     manifest["completed"] = len(done)
     manifest["errors"] = errors
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
     return run_dir
+
+
+def _print_progress(record: RunRecord, completed: int, total: int) -> None:
+    """One stderr line per captured cell: count, model, prompt, outcome."""
+    if record.error:
+        outcome = f"ERROR: {record.error.splitlines()[0][:80]}"
+    else:
+        outcome = record.refusal_flag or "ok"
+        if record.latency_ms is not None:
+            outcome += f" ({record.latency_ms / 1000:.1f}s)"
+    width = len(str(total))
+    print(
+        f"[{completed:>{width}}/{total}] {record.model:<36} {record.prompt_id[:8]}  {outcome}",
+        file=sys.stderr,
+    )
 
 
 def _main() -> int:
@@ -164,6 +189,7 @@ def _main() -> int:
     parser.add_argument("--system-prompt", default=None)
     parser.add_argument("--resume", type=Path, default=None, help="existing run dir to resume")
     parser.add_argument("--limit", type=int, default=None, help="only run the first N prompts")
+    parser.add_argument("--quiet", action="store_true", help="suppress per-cell progress output")
     args = parser.parse_args()
 
     params = RunParams(temperature=args.temperature, system_prompt=args.system_prompt)
@@ -173,6 +199,7 @@ def _main() -> int:
         registry_path=args.registry,
         resume_dir=args.resume,
         limit=args.limit,
+        on_progress=None if args.quiet else _print_progress,
     )
     manifest = json.loads((run_dir / "manifest.json").read_text())
     print(
