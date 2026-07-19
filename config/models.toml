@@ -1,8 +1,13 @@
 # Mizan v1.0 model registry.
 #
-# `id` is the Vercel AI Gateway model slug (<provider>/<model>). Verify slugs
-# against the gateway's catalogue (GET /v1/models) before a run — vendors
-# rotate model names frequently.
+# `id` is the canonical model slug (<provider>/<model>, Vercel AI Gateway
+# style) — records, viewer columns, and resume keys all use it, regardless of
+# which gateway carried the call. `openrouter_id` overrides the slug sent over
+# the wire when running with --gateway openrouter; omitted means the ids match.
+# Verify slugs against each gateway's catalogue before a run — vendors rotate
+# model names frequently:
+#   Vercel:     GET https://ai-gateway.vercel.sh/v1/models
+#   OpenRouter: GET https://openrouter.ai/api/v1/models (public, no key)
 
 [[models]]
 id = "openai/gpt-5.5"
@@ -23,8 +28,10 @@ display_name = "Gemini 3.1 Pro (preview)"
 id = "xai/grok-4.3"
 provider = "xai"
 display_name = "Grok 4.3"
+openrouter_id = "x-ai/grok-4.3"
 
 [[models]]
 id = "meta/llama-4-maverick"
 provider = "meta"
 display_name = "Llama 4 Maverick"
+openrouter_id = "meta-llama/llama-4-maverick"

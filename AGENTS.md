@@ -4,7 +4,8 @@
 
 Mizan (Arabic for *scale/balance*) is a discovery harness auditing how frontier LLMs handle
 Palestine-related queries. It runs a curated prompt bank across models (GPT, Claude, Gemini,
-Grok, Llama) through the **Vercel AI Gateway** and captures every prompt→model call as a
+Grok, Llama) through an **OpenAI-compatible gateway** (OpenRouter by default, Vercel AI
+Gateway as an alternative) and captures every prompt→model call as a
 structured, reproducible record on disk. The v1.0 deliverable is a completed bare-API run, a
 prompt × model viewer, and a short published note (*Mizan: Preliminary Observations*).
 
@@ -26,8 +27,9 @@ to judge output quality, it belongs in v2.0; stop and flag it instead.
 ## Module map & contracts
 
 - `mizan.gateway` — the **only** place that talks to a vendor endpoint.
-  `run(prompt: str, model: str, params: RunParams) -> Response` via the gateway's
-  OpenAI-compatible endpoint; failures raise `GatewayError`. Never import vendor SDKs elsewhere.
+  `run(prompt: str, model: str, params: RunParams) -> Response` via an OpenAI-compatible
+  gateway endpoint (`GATEWAYS` table: OpenRouter default, Vercel alternative); failures
+  raise `GatewayError`. Never import vendor SDKs elsewhere.
 - `mizan.registry` — model list from `config/models.toml`; never hardcode model ids at call sites.
 - `mizan.bank` — `PromptRecord` schema for `prompts/bank.jsonl`. The bank is curated in Notion
   and exported; treat the committed snapshot as read-only input.

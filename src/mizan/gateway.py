@@ -1,9 +1,9 @@
-"""Vercel AI Gateway adapter.
+"""OpenAI-compatible gateway adapter (OpenRouter default, Vercel alternative).
 
 The single provider abstraction: everything in the harness calls ``run()``;
-nothing else talks to a vendor SDK. The gateway exposes an OpenAI-compatible
-endpoint, so one ``openai`` client with a swapped ``base_url`` reaches every
-registered model.
+nothing else talks to a vendor SDK. Both supported gateways expose an
+OpenAI-compatible endpoint, so one ``openai`` client with a swapped
+``base_url`` reaches every registered model through either.
 """
 
 import os
@@ -13,8 +13,31 @@ import openai
 from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict
 
-GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1"
-API_KEY_ENV = "AI_GATEWAY_API_KEY"
+
+class GatewayConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str
+    base_url: str
+    api_key_env: str
+    key_hint: str  # where to mint a key, for the missing-key error
+
+
+GATEWAYS: dict[str, GatewayConfig] = {
+    "openrouter": GatewayConfig(
+        name="openrouter",
+        base_url="https://openrouter.ai/api/v1",
+        api_key_env="OPENROUTER_API_KEY",
+        key_hint="create one at https://openrouter.ai/settings/keys",
+    ),
+    "vercel": GatewayConfig(
+        name="vercel",
+        base_url="https://ai-gateway.vercel.sh/v1",
+        api_key_env="VERCEL_AI_GATEWAY_API_KEY",
+        key_hint="create one at https://vercel.com/docs/ai-gateway",
+    ),
+}
+DEFAULT_GATEWAY = "openrouter"
 
 
 class RunParams(BaseModel):
@@ -60,15 +83,19 @@ class GatewayError(Exception):
         self.retry_after = retry_after
 
 
-def make_client() -> openai.OpenAI:
-    """Build a gateway client from the environment (reads .env if present)."""
+def make_client(gateway_name: str = DEFAULT_GATEWAY) -> openai.OpenAI:
+    """Build a client for the named gateway from the environment (reads .env if present)."""
+    cfg = GATEWAYS.get(gateway_name)
+    if cfg is None:
+        raise GatewayError(f"unknown gateway {gateway_name!r}; choose from {sorted(GATEWAYS)}")
     load_dotenv()
-    api_key = os.environ.get(API_KEY_ENV)
+    api_key = os.environ.get(cfg.api_key_env)
     if not api_key:
         raise GatewayError(
-            f"{API_KEY_ENV} is not set — copy .env.example to .env and add your gateway key"
+            f"{cfg.api_key_env} is not set — copy .env.example to .env and add your "
+            f"{cfg.name} key ({cfg.key_hint})"
         )
-    return openai.OpenAI(api_key=api_key, base_url=GATEWAY_BASE_URL)
+    return openai.OpenAI(api_key=api_key, base_url=cfg.base_url)
 
 
 def run(

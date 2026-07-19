@@ -35,7 +35,8 @@ response fields instead of crashing or silently dropping.
 | Field | Type | Notes |
 |---|---|---|
 | `prompt_id`, `query` | str | Which prompt ran (id + the exact text sent). |
-| `model`, `provider` | str | Gateway model slug + provider, from the registry. |
+| `model`, `provider` | str | Canonical registry model slug + vendor, regardless of gateway. The slug actually sent over the wire (which may differ on OpenRouter) is visible in `raw`. |
+| `gateway` | str | Which HTTP gateway carried the call: `openrouter` or `vercel`. Records written before this field existed parse as `vercel` (historically correct). |
 | `params` | object | `temperature`, `system_prompt`, `web_search`, `max_output_tokens` — the exact call params. |
 | `timestamp` | datetime | UTC, call start. |
 | `response_text` | str \| null | Model output text; null on failure. |

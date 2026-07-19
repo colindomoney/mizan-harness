@@ -85,6 +85,34 @@ def test_capture_one_auth_error_raises() -> None:
         capture_one(PROMPT, MODEL, RunParams(), client=fake_client(completions))
 
 
+def test_capture_one_sends_openrouter_slug_but_records_canonical_id() -> None:
+    model = ModelEntry(
+        id="fake/model-a", provider="fake", display_name="A", openrouter_id="or-fake/model-a"
+    )
+    completions = FakeCompletions()
+    record = capture_one(
+        PROMPT, model, RunParams(), client=fake_client(completions), gateway_name="openrouter"
+    )
+    assert completions.last_kwargs is not None
+    assert completions.last_kwargs["model"] == "or-fake/model-a"  # wire slug
+    assert record.model == "fake/model-a"  # canonical id
+    assert record.gateway == "openrouter"
+
+
+def test_capture_one_error_record_carries_gateway() -> None:
+    completions = FakeCompletions(error=make_status_error(404))
+    record = capture_one(
+        PROMPT,
+        MODEL,
+        RunParams(),
+        client=fake_client(completions),
+        gateway_name="openrouter",
+        sleep=lambda _: None,
+    )
+    assert record.error is not None
+    assert record.gateway == "openrouter"
+
+
 def test_run_matrix_full_run_with_manifest(tmp_path: Path) -> None:
     bank, registry = write_fixtures(tmp_path)
     run_dir = run_matrix(
@@ -103,6 +131,8 @@ def test_run_matrix_full_run_with_manifest(tmp_path: Path) -> None:
 
     manifest = json.loads((run_dir / "manifest.json").read_text())
     assert manifest["bank_sha256"] == hashlib.sha256(bank.read_bytes()).hexdigest()
+    assert manifest["gateway"] == "openrouter"  # default gateway
+    assert all(r.gateway == "openrouter" for r in records)
     assert [m["id"] for m in manifest["models"]] == ["fake/model-a", "fake/model-b"]
     assert manifest["total_cells"] == manifest["completed"] == 6
     assert manifest["errors"] == 0
@@ -151,3 +181,75 @@ def test_run_matrix_resume_skips_captured_cells(tmp_path: Path) -> None:
     assert len(read_records(run_dir)) == 6
     manifest = json.loads((run_dir / "manifest.json").read_text())
     assert manifest["completed"] == 6
+
+
+def test_run_matrix_records_explicit_vercel_gateway(tmp_path: Path) -> None:
+    bank, registry = write_fixtures(tmp_path)
+    run_dir = run_matrix(
+        bank,
+        RunParams(),
+        registry_path=registry,
+        out_base=tmp_path / "runs",
+        client=fake_client(FakeCompletions()),
+        gateway_name="vercel",
+    )
+    manifest = json.loads((run_dir / "manifest.json").read_text())
+    assert manifest["gateway"] == "vercel"
+    assert all(r.gateway == "vercel" for r in read_records(run_dir))
+
+
+def test_run_matrix_resume_gateway_mismatch_raises(tmp_path: Path) -> None:
+    bank, registry = write_fixtures(tmp_path)
+    run_dir = run_matrix(
+        bank,
+        RunParams(),
+        registry_path=registry,
+        out_base=tmp_path / "runs",
+        client=fake_client(FakeCompletions()),
+        limit=1,
+    )
+    with pytest.raises(ValueError, match="gateway mismatch"):
+        run_matrix(
+            bank,
+            RunParams(),
+            registry_path=registry,
+            resume_dir=run_dir,
+            client=fake_client(FakeCompletions()),
+            gateway_name="vercel",
+        )
+
+
+def test_run_matrix_resume_pre_gateway_manifest_treated_as_vercel(tmp_path: Path) -> None:
+    bank, registry = write_fixtures(tmp_path)
+    run_dir = run_matrix(
+        bank,
+        RunParams(),
+        registry_path=registry,
+        out_base=tmp_path / "runs",
+        client=fake_client(FakeCompletions()),
+        gateway_name="vercel",
+        limit=1,
+    )
+    # Simulate a run captured before the gateway field existed.
+    manifest_path = run_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    del manifest["gateway"]
+    manifest_path.write_text(json.dumps(manifest))
+
+    with pytest.raises(ValueError, match="gateway mismatch"):
+        run_matrix(
+            bank,
+            RunParams(),
+            registry_path=registry,
+            resume_dir=run_dir,
+            client=fake_client(FakeCompletions()),
+        )  # default openrouter must not silently mix into a vercel run
+    resumed = run_matrix(
+        bank,
+        RunParams(),
+        registry_path=registry,
+        resume_dir=run_dir,
+        client=fake_client(FakeCompletions()),
+        gateway_name="vercel",
+    )
+    assert resumed == run_dir

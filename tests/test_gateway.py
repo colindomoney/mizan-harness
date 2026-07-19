@@ -56,8 +56,43 @@ def test_status_error_carries_status_and_retry_after() -> None:
     assert excinfo.value.retry_after == 7.0
 
 
-def test_missing_key_raises_clean_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv(gateway.API_KEY_ENV, raising=False)
+@pytest.mark.parametrize(
+    ("gateway_name", "key_env"),
+    [("openrouter", "OPENROUTER_API_KEY"), ("vercel", "VERCEL_AI_GATEWAY_API_KEY")],
+)
+def test_missing_key_raises_clean_error(
+    monkeypatch: pytest.MonkeyPatch, gateway_name: str, key_env: str
+) -> None:
+    monkeypatch.delenv(key_env, raising=False)
     monkeypatch.setattr(gateway, "load_dotenv", lambda: None)
-    with pytest.raises(GatewayError, match=gateway.API_KEY_ENV):
-        gateway.make_client()
+    with pytest.raises(GatewayError, match=key_env):
+        gateway.make_client(gateway_name)
+
+
+def test_unknown_gateway_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(gateway, "load_dotenv", lambda: None)
+    with pytest.raises(GatewayError, match="unknown gateway"):
+        gateway.make_client("nope")
+
+
+@pytest.mark.parametrize(
+    ("gateway_name", "key_env", "base_url"),
+    [
+        ("openrouter", "OPENROUTER_API_KEY", "https://openrouter.ai/api/v1"),
+        ("vercel", "VERCEL_AI_GATEWAY_API_KEY", "https://ai-gateway.vercel.sh/v1"),
+    ],
+)
+def test_make_client_uses_gateway_base_url(
+    monkeypatch: pytest.MonkeyPatch, gateway_name: str, key_env: str, base_url: str
+) -> None:
+    monkeypatch.setattr(gateway, "load_dotenv", lambda: None)
+    monkeypatch.setenv(key_env, "fake-key")
+    client = gateway.make_client(gateway_name)
+    assert str(client.base_url).rstrip("/") == base_url
+
+
+def test_default_gateway_is_openrouter(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(gateway, "load_dotenv", lambda: None)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake-key")
+    assert gateway.DEFAULT_GATEWAY == "openrouter"
+    assert str(gateway.make_client().base_url).startswith("https://openrouter.ai")

@@ -3,8 +3,10 @@
 [![CI](https://github.com/colindomoney/mizan-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/colindomoney/mizan-harness/actions/workflows/ci.yml)
 
 Mizan is a discovery harness that runs a curated bank of Palestine-related prompts across
-frontier LLMs (GPT, Claude, Gemini, Grok, Llama) via the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway),
-capturing every prompt→model call as a structured, reproducible record.
+frontier LLMs (GPT, Claude, Gemini, Grok, Llama) through an OpenAI-compatible gateway —
+[OpenRouter](https://openrouter.ai) by default, the
+[Vercel AI Gateway](https://vercel.com/docs/ai-gateway) as an alternative — capturing every
+prompt→model call as a structured, reproducible record.
 
 **v1.0 is capture-only.** No scoring, no LLM-as-judge, no bias rating — the goal is to run
 the prompts, eyeball the outputs side by side, and publish preliminary observations that
@@ -22,15 +24,21 @@ uv sync
 
 ## Setup
 
-One secret is needed: a Vercel AI Gateway API key (one key covers all models).
+One secret is needed: an OpenRouter API key (one key covers all models; create one at
+[openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)).
 
 ```sh
-cp .env.example .env    # then paste your AI_GATEWAY_API_KEY into .env
-./hello-gateway.sh      # smoke-test the key: one free-tier call, one premium call
+cp .env.example .env    # then paste your OPENROUTER_API_KEY into .env
+./hello-gateway.sh      # smoke-test the key: one cheap call, one premium call
 ```
 
-If the Llama call passes but GPT fails with a 403, the key works but Vercel is still
-treating the account as free tier — premium models unlock once paid credit is visible.
+To use the Vercel AI Gateway instead, set `VERCEL_AI_GATEWAY_API_KEY` in `.env` and pass
+`--gateway vercel` (smoke test: `./hello-gateway.sh vercel`). On Vercel, if the Llama call
+passes but GPT fails with a 403, the key works but the account is still being treated as
+free tier — premium models unlock once paid credit is visible.
+
+> **Migration note:** the Vercel key env var was renamed `AI_GATEWAY_API_KEY` →
+> `VERCEL_AI_GATEWAY_API_KEY`. Rename it in your existing `.env`.
 
 ## Usage
 
@@ -59,6 +67,7 @@ Options:
 |---|---|---|
 | `--bank PATH` | `prompts/bank.jsonl` | prompt bank snapshot to run |
 | `--registry PATH` | `config/models.toml` | model registry |
+| `--gateway {openrouter,vercel}` | `openrouter` | HTTP gateway to route calls through |
 | `--temperature F` | `0.0` | sampling temperature for every call |
 | `--system-prompt S` | none | optional system prompt for every call |
 | `--limit N` | all | only run the first N prompts |
@@ -71,6 +80,10 @@ already-captured cells are skipped:
 ```sh
 uv run python -m mizan.runner --resume runs/20260706T224359Z
 ```
+
+A run directory sticks to one gateway: resuming with a different `--gateway` than the
+original run fails loudly. Runs captured before the gateway field existed count as
+`vercel` — resume them with `--gateway vercel`.
 
 Transient gateway failures (429/5xx) retry with backoff; auth failures (401/403) stop
 the run immediately rather than recording a wall of errors.
@@ -108,9 +121,12 @@ up as a changed hash.
 ## Models
 
 The registry lives in [`config/models.toml`](config/models.toml) — one entry per model
-with its gateway slug (`<provider>/<model>`). Never hardcode model ids elsewhere. Vendors
-rotate slugs frequently; verify against the gateway catalogue (`GET /v1/models`) before
-a run.
+with its canonical slug (`<provider>/<model>`, Vercel-style). Never hardcode model ids
+elsewhere. Where OpenRouter uses a different slug (e.g. `x-ai/…`, `meta-llama/…`), the
+entry carries an `openrouter_id` override — the canonical `id` is still what records and
+the viewer use, regardless of gateway. Vendors rotate slugs frequently; verify against
+the gateway catalogue before a run (`GET https://openrouter.ai/api/v1/models`, no key
+needed, or Vercel's `GET /v1/models`).
 
 ## Docs
 

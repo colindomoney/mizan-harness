@@ -119,6 +119,7 @@ def render_html(
         "<h1>Mizan run viewer</h1>",
         '<p class="meta">'
         f"started <code>{html.escape(str(manifest.get('started_at')))}</code> · "
+        f"gateway <code>{html.escape(str(manifest.get('gateway', 'vercel')))}</code> · "
         f"bank <code>{html.escape(str(manifest.get('bank_sha256'))[:12])}</code> · "
         f"{len(cells)}/{manifest.get('total_cells')} cells · {flag_summary}" + hash_warn + "</p>",
     ]

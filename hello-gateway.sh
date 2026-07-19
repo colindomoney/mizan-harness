@@ -1,21 +1,42 @@
 #!/bin/bash
-# Hello-world test for the Vercel AI Gateway.
-# Reads AI_GATEWAY_API_KEY from .env, asks one premium model (GPT-5.5) and one
-# free-tier model (Llama) to say hello. If Llama answers but GPT-5.5 is 403,
-# the account is still being treated as unpaid free tier.
+# Hello-world test for a gateway: ./hello-gateway.sh [openrouter|vercel]
+# (default: openrouter). Reads the gateway's API key from .env and asks one
+# premium model (GPT-5.5) and one cheap model (Llama) to say hello.
+# Vercel only: if Llama answers but GPT-5.5 is 403, the account is still being
+# treated as unpaid free tier. On OpenRouter both calls just validate key/credit.
 set -euo pipefail
 cd "$(dirname "$0")"
 
-KEY=$(grep '^AI_GATEWAY_API_KEY=' .env | cut -d= -f2-)
+GATEWAY="${1:-openrouter}"
+case "$GATEWAY" in
+  openrouter)
+    BASE_URL="https://openrouter.ai/api/v1"
+    KEY_VAR="OPENROUTER_API_KEY"
+    LLAMA="meta-llama/llama-4-maverick"
+    GPT="openai/gpt-5.5"
+    ;;
+  vercel)
+    BASE_URL="https://ai-gateway.vercel.sh/v1"
+    KEY_VAR="VERCEL_AI_GATEWAY_API_KEY"
+    LLAMA="meta/llama-4-maverick"
+    GPT="openai/gpt-5.5"
+    ;;
+  *)
+    echo "ERROR: unknown gateway '$GATEWAY' (use openrouter or vercel)" >&2
+    exit 1
+    ;;
+esac
+
+KEY=$(grep "^${KEY_VAR}=" .env | cut -d= -f2- || true)
 if [ -z "$KEY" ]; then
-  echo "ERROR: no AI_GATEWAY_API_KEY in .env" >&2
+  echo "ERROR: no $KEY_VAR in .env" >&2
   exit 1
 fi
 
 call() {
   local model="$1"
   echo "=== $model ==="
-  curl -sS https://ai-gateway.vercel.sh/v1/chat/completions \
+  curl -sS "$BASE_URL/chat/completions" \
     -H "Authorization: Bearer $KEY" \
     -H "Content-Type: application/json" \
     -d '{"model": "'"$model"'", "messages": [{"role": "user", "content": "Say hello world"}], "max_tokens": 20}' \
@@ -31,5 +52,5 @@ else:
   echo
 }
 
-call "meta/llama-4-maverick"   # free tier — should always work
-call "openai/gpt-5.5"          # premium — works only once Vercel sees your paid credit
+call "$LLAMA"   # cheap — should always work
+call "$GPT"     # premium — validates paid credit

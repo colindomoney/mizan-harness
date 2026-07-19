@@ -47,6 +47,7 @@ def capture_one(
     params: RunParams,
     *,
     client: openai.OpenAI,
+    gateway_name: str = gateway.DEFAULT_GATEWAY,
     sleep=time.sleep,
 ) -> RunRecord:
     """Run one cell, retrying transient failures; failures become error records.
@@ -57,12 +58,13 @@ def capture_one(
     last_error = "unreachable"
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            response = gateway.run(prompt.query, model.id, params, client=client)
+            response = gateway.run(prompt.query, model.id_for(gateway_name), params, client=client)
             record = RunRecord.from_response(
                 prompt_id=prompt.id,
                 query=prompt.query,
                 model=model.id,
                 provider=model.provider,
+                gateway=gateway_name,
                 params=params,
                 response=response,
             )
@@ -82,6 +84,7 @@ def capture_one(
         query=prompt.query,
         model=model.id,
         provider=model.provider,
+        gateway=gateway_name,
         params=params,
         timestamp=datetime.now(UTC),
         error=last_error,
@@ -106,6 +109,7 @@ def run_matrix(
     out_base: Path = Path("runs"),
     resume_dir: Path | None = None,
     client: openai.OpenAI | None = None,
+    gateway_name: str = gateway.DEFAULT_GATEWAY,
     sleep=time.sleep,
     limit: int | None = None,
     on_progress: Callable[[RunRecord, int, int], None] | None = None,
@@ -118,21 +122,26 @@ def run_matrix(
     """
     prompts = load_bank(bank_path)[:limit]
     models = load_registry(registry_path)
-    client = client or gateway.make_client()
+    client = client or gateway.make_client(gateway_name)
 
     run_dir = resume_dir or new_run_dir(out_base)
     records_path = run_dir / "records.jsonl"
     done = _captured_cells(records_path)
 
     manifest_path = run_dir / "manifest.json"
-    started_at = (
-        json.loads(manifest_path.read_text())["started_at"]
-        if manifest_path.exists()
-        else datetime.now(UTC).isoformat()
-    )
+    prior = json.loads(manifest_path.read_text()) if manifest_path.exists() else None
+    if prior is not None:
+        prior_gateway = prior.get("gateway", "vercel")
+        if prior_gateway != gateway_name:
+            raise ValueError(
+                f"resume gateway mismatch: run captured via {prior_gateway!r}, "
+                f"requested {gateway_name!r} — a run dir must use one gateway throughout"
+            )
+    started_at = prior["started_at"] if prior else datetime.now(UTC).isoformat()
     manifest = {
         "bank_path": str(bank_path),
         "bank_sha256": bank_sha256(bank_path),
+        "gateway": gateway_name,
         "models": [m.model_dump() for m in models],
         "params": params.model_dump(),
         "total_cells": len(prompts) * len(models),
@@ -149,7 +158,9 @@ def run_matrix(
             for model in models:
                 if (prompt.id, model.id) in done:
                     continue
-                record = capture_one(prompt, model, params, client=client, sleep=sleep)
+                record = capture_one(
+                    prompt, model, params, client=client, gateway_name=gateway_name, sleep=sleep
+                )
                 out.write(record.to_json_line() + "\n")
                 out.flush()
                 errors += record.error is not None
@@ -187,6 +198,12 @@ def _main() -> int:
     parser.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY_PATH)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--system-prompt", default=None)
+    parser.add_argument(
+        "--gateway",
+        choices=sorted(gateway.GATEWAYS),
+        default=gateway.DEFAULT_GATEWAY,
+        help="HTTP gateway to route calls through",
+    )
     parser.add_argument("--resume", type=Path, default=None, help="existing run dir to resume")
     parser.add_argument("--limit", type=int, default=None, help="only run the first N prompts")
     parser.add_argument("--quiet", action="store_true", help="suppress per-cell progress output")
@@ -198,6 +215,7 @@ def _main() -> int:
         params,
         registry_path=args.registry,
         resume_dir=args.resume,
+        gateway_name=args.gateway,
         limit=args.limit,
         on_progress=None if args.quiet else _print_progress,
     )

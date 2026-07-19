@@ -19,6 +19,9 @@ class RunRecord(BaseModel):
     query: str
     model: str
     provider: str
+    # Which HTTP gateway carried the call; `provider` remains the vendor. The
+    # default exists so pre-gateway-field JSONL lines (all Vercel) still parse.
+    gateway: str = "vercel"
     params: RunParams
     timestamp: datetime
     # Response fields are None when the call failed; `error` says why.
@@ -40,6 +43,7 @@ class RunRecord(BaseModel):
         query: str,
         model: str,
         provider: str,
+        gateway: str,
         params: RunParams,
         response: Response,
     ) -> "RunRecord":
@@ -48,6 +52,7 @@ class RunRecord(BaseModel):
             query=query,
             model=model,
             provider=provider,
+            gateway=gateway,
             params=params,
             timestamp=datetime.now(UTC),
             response_text=response.text,

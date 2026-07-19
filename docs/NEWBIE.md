@@ -29,11 +29,13 @@ question asked with the sides swapped or the frame mirrored. Both members carry 
 side of the same question.
 
 **The model registry** — `config/models.toml`, the five models under test, addressed by
-their Vercel AI Gateway slug.
+a canonical `<provider>/<model>` slug (with an `openrouter_id` override where OpenRouter
+names a model differently).
 
-**The gateway** — all model calls go through the Vercel AI Gateway (one OpenAI-compatible
-endpoint, one API key, all vendors). `src/mizan/gateway.py` is the only file that talks
-to it; nothing else in the codebase touches a vendor API.
+**The gateway** — all model calls go through one OpenAI-compatible gateway (one API key,
+all vendors): OpenRouter by default, the Vercel AI Gateway via `--gateway vercel`.
+`src/mizan/gateway.py` is the only file that talks to either; nothing else in the
+codebase touches a vendor API.
 
 **The runner** — `src/mizan/runner.py` runs the full prompt × model matrix. Every call
 becomes one JSON line in `runs/<timestamp>/records.jsonl`: the exact query, model,
@@ -63,7 +65,7 @@ Observations* note draws from.
 ```sh
 git clone <this repo> && cd mizan-harness
 uv sync
-cp .env.example .env      # paste in an AI_GATEWAY_API_KEY (ask Colin, or mint your own)
+cp .env.example .env      # paste in an OPENROUTER_API_KEY (ask Colin, or mint your own)
 ./hello-gateway.sh        # verify the key works
 
 uv run python -m mizan.runner --limit 2     # tiny sweep: 2 prompts × 5 models
@@ -89,7 +91,8 @@ has the gateway message. Transient errors (429/5xx) were already retried before 
 recorded.
 
 **A model's slug stopped working?** Vendors rotate model names. Check the gateway
-catalogue (`GET /v1/models`) and update `config/models.toml` — never a hardcoded id.
+catalogue (`GET https://openrouter.ai/api/v1/models`, or Vercel's `GET /v1/models`) and
+update `config/models.toml` — never a hardcoded id.
 
 **Where do I file issues?** The Mizan team in Linear (`MIZ-*`).
 

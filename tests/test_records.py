@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 
 from mizan.gateway import Response, RunParams
@@ -56,9 +57,28 @@ def test_from_response_captures_everything() -> None:
         query="q",
         model="openai/gpt-5.1",
         provider="openai",
+        gateway="openrouter",
         params=RunParams(),
         response=resp,
     )
     assert rec.response_text == "answer"
+    assert rec.gateway == "openrouter"
     assert (rec.tokens_in, rec.tokens_out, rec.latency_ms) == (5, 50, 900)
     assert rec.refusal_flag is None and rec.error is None
+
+
+def test_pre_gateway_field_lines_parse_as_vercel() -> None:
+    # Records written before the `gateway` field existed (all captured via
+    # Vercel) must still parse, defaulting to "vercel".
+    line = make_record().to_json_line()
+    old = json.loads(line)
+    del old["gateway"]
+    back = RunRecord.from_json_line(json.dumps(old))
+    assert back.gateway == "vercel"
+
+
+def test_gateway_serialises_on_every_line() -> None:
+    rec = make_record(gateway="openrouter")
+    data = json.loads(rec.to_json_line())
+    assert data["gateway"] == "openrouter"
+    assert RunRecord.from_json_line(rec.to_json_line()) == rec
