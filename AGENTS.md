@@ -34,6 +34,12 @@ to judge output quality, it belongs in v2.0; stop and flag it instead.
 - `mizan.bank` — `PromptRecord` schema for `prompts/bank.jsonl`. The bank is curated in Notion
   and exported; treat the committed snapshot as read-only input.
 - `mizan.records` — `RunRecord`, one JSONL line per call (failures included, with `error` set).
+- `mizan.rundata` — shared run loading: manifest → bank → records join (`load_run` →
+  `RunData`), prompt ordering, and the presentation-level `effective_flag` (adds `missing` /
+  `error` on top of the captured refusal flag). Viewer and exporters both build on this.
+- `mizan.export` — run exporters: `export.xlsx` (four-sheet Excel workbook) and
+  `export.notion` (push to the master "Mizan runs" Notion database). Presentation only —
+  same capture-only guardrail as everywhere else. See [docs/export.md](docs/export.md).
 - Runs write to `runs/<timestamp>/` (gitignored): `records.jsonl` + `manifest.json` pinning
   the bank snapshot hash.
 
