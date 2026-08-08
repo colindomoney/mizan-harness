@@ -101,6 +101,29 @@ symmetry pairs adjacent), columns are models, and every cell shows the refusal f
 token/latency stats, and the full captured response. `--out PATH` overrides the output
 location.
 
+### Export for analysis
+
+```sh
+uv run python -m mizan.export runs/<timestamp>             # Excel workbook → <run>/export.xlsx
+uv run python -m mizan.export runs/<timestamp> --notion    # also push to Notion
+```
+
+The workbook has four sheets: **Records** (one filterable row per prompt × model cell,
+full response text), **Model summary** (flag counts + mean tokens/latency per model),
+**Domain breakdown** (flag counts per domain × model), and **Pairs** (both halves of every
+counterfactual/symmetry pair side by side per model).
+
+Pushing to Notion needs a one-time bootstrap (creates the master "Mizan runs" database
+and prints the id to store in `.env` as `NOTION_RUNS_DATA_SOURCE_ID`):
+
+```sh
+uv run python -m mizan.export --init-notion --parent-page-id <notion-page-id>
+```
+
+Every run lands in that one database with a `Run` select property, so Notion views can
+filter and compare across runs. Re-pushing a run aborts unless `--force` (which archives
+the previous pages first). Details: [docs/export.md](docs/export.md).
+
 ### Validate the bank
 
 ```sh
@@ -133,6 +156,7 @@ needed, or Vercel's `GET /v1/models`).
 - [Newbie guide](docs/NEWBIE.md) — orientation for new team members
 - [Data schemas](docs/schemas.md) — field-level detail for `PromptRecord` and `RunRecord`
 - [Refusal heuristic](docs/refusal-heuristic.md) — how the answered/refused/hedged flag works
+- [Export](docs/export.md) — Excel workbook + Notion push for analysis and reporting
 
 ## Development
 

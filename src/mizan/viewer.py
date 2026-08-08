@@ -7,14 +7,15 @@ symmetry pairs adjacent; columns are models; every cell shows the refusal
 flag and the full captured response.
 """
 
-import hashlib
 import html
-import json
 from collections import Counter
 from pathlib import Path
 
-from mizan.bank import PromptRecord, load_bank
+from mizan.bank import PromptRecord
 from mizan.records import RunRecord
+from mizan.rundata import load_run, order_prompts
+
+__all__ = ["build_viewer", "order_prompts", "render_html"]
 
 _FLAG_LABELS = {
     "answered": "answered",
@@ -51,34 +52,6 @@ details pre { white-space: pre-wrap; margin: 0.4rem 0 0; font-family: inherit;
   max-height: 24rem; overflow-y: auto; background: #f9f9f9; padding: 0.5rem; }
 td.missing { color: #bbb; text-align: center; }
 """
-
-
-def order_prompts(prompts: list[PromptRecord]) -> list[PromptRecord]:
-    """Order for display: grouped by domain, pair members forced adjacent."""
-    by_id = {p.id: p for p in prompts}
-    partner: dict[str, str] = {}
-    by_pair: dict[str, list[str]] = {}
-    for p in prompts:
-        if p.pair_id:
-            by_pair.setdefault(p.pair_id, []).append(p.id)
-    for ids in by_pair.values():
-        if len(ids) == 2:
-            partner[ids[0]], partner[ids[1]] = ids[1], ids[0]
-
-    ordered: list[PromptRecord] = []
-    emitted: set[str] = set()
-    domains = {p.domain for p in prompts}
-    for domain in [d for d in type(next(iter(prompts)).domain) if d in domains]:
-        for p in prompts:
-            if p.domain != domain or p.id in emitted:
-                continue
-            ordered.append(p)
-            emitted.add(p.id)
-            mate = partner.get(p.id)
-            if mate and mate not in emitted:
-                ordered.append(by_id[mate])
-                emitted.add(mate)
-    return ordered
 
 
 def _render_cell(record: RunRecord | None) -> str:
@@ -152,23 +125,13 @@ def render_html(
 
 def build_viewer(run_dir: Path, bank_path: Path | None = None, out: Path | None = None) -> Path:
     """Render viewer.html for a run dir; returns the output path."""
-    manifest = json.loads((run_dir / "manifest.json").read_text())
-    bank_path = bank_path or Path(manifest["bank_path"])
-    prompts = order_prompts(load_bank(bank_path))
-
-    bank_hash_matches = (
-        hashlib.sha256(bank_path.read_bytes()).hexdigest() == manifest["bank_sha256"]
-    )
-
-    cells: dict[tuple[str, str], RunRecord] = {}
-    with (run_dir / "records.jsonl").open() as f:
-        for line in f:
-            if line.strip():
-                rec = RunRecord.from_json_line(line)
-                cells[(rec.prompt_id, rec.model)] = rec
-
+    data = load_run(run_dir, bank_path=bank_path)
     html_text = render_html(
-        prompts, manifest["models"], cells, manifest, bank_hash_matches=bank_hash_matches
+        data.prompts,
+        data.models,
+        data.cells,
+        data.manifest,
+        bank_hash_matches=data.bank_hash_matches,
     )
     out = out or run_dir / "viewer.html"
     out.write_text(html_text)
