@@ -10,6 +10,15 @@ from mizan_prep import main
 
 REPO = Path(__file__).resolve().parents[1]
 JULY_RUNS = REPO / "runs"
+# The five July 2026 captures (local only; CI has just the one run that was committed
+# before runs/ was ignored, so the cross-run facts cannot be checked there).
+JULY_RUN_IDS = (
+    "20260706T224359Z",
+    "20260711T104347Z",
+    "20260711T104752Z",
+    "20260719T110157Z",
+    "20260719T110322Z",
+)
 
 
 def _two_runs(tmp_path):
@@ -94,11 +103,14 @@ def test_malformed_input_exits_nonzero(tmp_path, capsys):
     assert main(["--out", str(tmp_path / "o"), "--bank", str(bank), str(tmp_path / "missing")]) == 2
 
 
-@pytest.mark.skipif(not (JULY_RUNS / "20260706T224359Z").exists(), reason="July runs not present")
+@pytest.mark.skipif(
+    not all((JULY_RUNS / rid / "records.jsonl").exists() for rid in JULY_RUN_IDS),
+    reason="all five July runs are needed (local captures, not in git)",
+)
 def test_july_batch_reproduces_spec_facts(tmp_path):
     out = tmp_path / "july"
     t0 = time.perf_counter()
-    assert main([str(JULY_RUNS), "--out", str(out)]) == 0
+    assert main([str(JULY_RUNS / rid) for rid in JULY_RUN_IDS] + ["--out", str(out)]) == 0
     assert time.perf_counter() - t0 < 10
     c = json.loads((out / "candidates.json").read_text())
     m = c["metrics"]
