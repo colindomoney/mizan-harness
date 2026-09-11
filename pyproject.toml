@@ -33,5 +33,9 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["mizan", "mizan_prep"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["skills/mizan/analyse/scripts"]

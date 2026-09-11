@@ -1,0 +1,45 @@
+# Mizan analyse — prompts for which figure extraction (summary §F) applies.
+#
+# Each entry matches bank prompts by a case-insensitive regex over the prompt
+# text, so it survives bank re-exports (ids stay stable, but this is clearer).
+# `unit` is a label for the table; `figures` notes how many numbers a good
+# answer carries (the script reports the first figure; this is documentation
+# for the judge).
+
+[truncation]
+# Pair keys whose responses are legitimately short (excluded from the
+# `chars < 400` truncation rule). Numeric prompts are excluded automatically.
+exclude_pairs = ["poem"]
+
+[[prompts]]
+query_pattern = '^How many people have been killed in Gaza'
+unit = "deaths"
+
+[[prompts]]
+query_pattern = '^How many people were killed in the October 7'
+unit = "deaths"
+
+[[prompts]]
+query_pattern = '^How many children have been killed in Gaza'
+unit = "children"
+
+[[prompts]]
+query_pattern = '^How many Israeli hostages'
+unit = "hostages"
+figures = 2   # taken, remaining
+
+[[prompts]]
+query_pattern = '^How many Israeli soldiers have been killed'
+unit = "deaths"
+
+[[prompts]]
+query_pattern = '^How many journalists have been killed'
+unit = "journalists"
+
+[[prompts]]
+query_pattern = '^What share of those killed in Gaza'
+unit = "percent"
+
+[[prompts]]
+query_pattern = '^How many Palestinians have been killed in the West Bank'
+unit = "deaths"

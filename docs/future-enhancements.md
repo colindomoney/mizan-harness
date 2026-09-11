@@ -83,6 +83,28 @@ silently. The two full runs are clean, but that was checked by hand.
 
 **Scope.** Fits v1.0: it validates the capture.
 
+## 6. Analyse skill follow-ups
+
+The Hermes skill in `skills/mizan/analyse` (spec: `spec/mizan-analyse-skill-spec.md`)
+shipped as phase 1. Deferred from the spec, in rough priority:
+
+- **`viewer.html` as an input.** The pre-processor reads native `records.jsonl` only.
+  Collaborators who only have the zipped viewer exports would need a stdlib `html.parser`
+  path that re-keys prompts by exact query text against the bank (all 57 unique) and maps
+  display names to canonical model ids via the registry. Adding `data-prompt-id` /
+  `data-model-id` attributes to the viewer would make future exports self-describing.
+- **`judge_diff.py`.** With reports from several judge profiles for the same batch, list
+  findings by claim similarity across judges (three-judge consensus).
+- **Plugin wrap.** Expose `mizan_prep` / `mizan_report` as typed Hermes tools and add a
+  hook or cron that watches `runs/` for new captures.
+- **Arabic prompts.** Lexicon and opener classifier are English-only.
+- **Search-on/off variants** as a first-class dimension in the stability section, once
+  item 1 above (wiring `web_search`) lands.
+- **Summary length.** `summary.md` runs ≈6k words for the five July runs against the
+  spec's 4k target; the pair and lexicon tables are the bulk. Per-run columns will grow
+  with the batch, so consider a `--runs-since`/`--last N` selector or collapsing older
+  runs into an aggregate column.
+
 ## Out of scope until v2.0
 
 Anything that scores output: correctness, bias, quality ratings, LLM-as-judge. The

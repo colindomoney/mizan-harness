@@ -1,8 +1,11 @@
 # Environment / secrets
 .env
 
-# Run outputs
-runs/
+# Run outputs (captures stay local; analysis reports are versioned, minus the bulky
+# normalised.json — see skills/mizan/analyse)
+runs/*
+!runs/analysis/
+runs/analysis/**/normalised.json
 
 # Python
 __pycache__/

@@ -51,12 +51,14 @@ def make_run_dir(
     *,
     models: list[dict] = RUN_MODELS,
     corrupt_hash: bool = False,
+    run_name: str = "20260101T000000Z",
+    started_at: str = "2026-01-01T00:00:00+00:00",
 ) -> Path:
     """Write a synthetic bank + run dir (manifest.json, records.jsonl) under tmp_path."""
     bank_path = tmp_path / "bank.jsonl"
     bank_path.write_text("".join(p.model_dump_json() + "\n" for p in prompts))
 
-    run_dir = tmp_path / "20260101T000000Z"
+    run_dir = tmp_path / run_name
     run_dir.mkdir()
     manifest = {
         "bank_path": str(bank_path),
@@ -67,7 +69,7 @@ def make_run_dir(
         "models": models,
         "params": RunParams().model_dump(),
         "total_cells": len(prompts) * len(models),
-        "started_at": "t0",
+        "started_at": started_at,
         "finished_at": None,
         "completed": len(records),
         "errors": sum(1 for r in records if r.error),

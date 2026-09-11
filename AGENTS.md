@@ -42,6 +42,12 @@ to judge output quality, it belongs in v2.0; stop and flag it instead.
   same capture-only guardrail as everywhere else. See [docs/export.md](docs/export.md).
 - Runs write to `runs/<timestamp>/` (gitignored): `records.jsonl` + `manifest.json` pinning
   the bank snapshot hash.
+- `skills/mizan/analyse` — Hermes Agent skill (not part of the `mizan` package). Stdlib-only
+  `scripts/mizan_prep.py` normalises `runs/*/records.jsonl` and computes every metric
+  (`summary.md`/`candidates.json`/`normalised.json`, byte-deterministic); `SKILL.md` tells the
+  judge LLM how to write `report.md`. Findings are *relative only* (differences between
+  outputs), never correctness or bias — the same guardrail. Config is TOML in `references/`;
+  tests in `tests/test_analyse_*.py`. Analysis outputs go to `runs/analysis/<judge>/`.
 
 Field-level detail for both schemas: [docs/schemas.md](docs/schemas.md).
 What each call actually sends (no tools, no web search, no reasoning control):

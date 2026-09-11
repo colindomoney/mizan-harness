@@ -130,6 +130,40 @@ the previous pages first). Details: [docs/export.md](docs/export.md).
 uv run python -m mizan.bank    # checks prompts/bank.jsonl: schema + pairing integrity
 ```
 
+### Analyse a batch of runs (Hermes skill)
+
+`skills/mizan/analyse/` is a [Hermes Agent](https://github.com/NousResearch/hermes-agent)
+skill that turns a batch of runs into a *points-of-interest* report: cross-model divergence,
+within-pair asymmetry, run-to-run instability, loaded-terminology patterns, divergent
+figures, and pipeline artefacts, each with cited cell ids and verbatim quotes. It is two
+layers: a deterministic, stdlib-only pre-processor that computes every number, and a judge
+LLM that only interprets. Findings are strictly *relative* (differences between outputs);
+nothing rates correctness or bias, so the v1.0 guardrail holds.
+
+The pre-processor also works on its own, no Hermes needed:
+
+```sh
+python3 skills/mizan/analyse/scripts/mizan_prep.py runs --out runs/analysis/local
+python3 skills/mizan/analyse/scripts/mizan_prep.py cell <cell_id …> --out runs/analysis/local
+```
+
+`runs` (a batch dir of run dirs), individual run dirs, or `records.jsonl` files are all
+accepted. Outputs: `summary.md` (sections A–H), `candidates.json`, `normalised.json` —
+byte-identical for the same inputs and script. Lexicon and numeric-prompt config live in
+`skills/mizan/analyse/references/*.toml`.
+
+To expose the skill to a local Hermes, point `skills.external_dirs` in `~/.hermes/config.yaml`
+at the repo's `skills/` directory (absolute path), then:
+
+```sh
+hermes -z "/mizan-analyse analyse batch runs"          # one-shot, prints the findings
+hermes -z "/mizan-analyse analyse batch runs judge=grok-4.5 findings=3"
+```
+
+Reports land in `runs/analysis/<judge-slug>/` (`summary.md`, `candidates.json`, `report.md`
+are versioned; `normalised.json` is ignored). Procedure and rules: [`SKILL.md`](skills/mizan/analyse/SKILL.md);
+design record: [`spec/mizan-analyse-skill-spec.md`](spec/mizan-analyse-skill-spec.md).
+
 ## Prompt bank
 
 The prompt bank is committed at `prompts/bank.jsonl` — the harness reads only this file.
@@ -159,6 +193,7 @@ needed, or Vercel's `GET /v1/models`).
 - [Export](docs/export.md) — Excel workbook + Notion push for analysis and reporting
 - [Call path](docs/call-path.md) — what is (and isn't) sent to each model; web search and reasoning status
 - [Future enhancements](docs/future-enhancements.md) — deferred work and its scope, e.g. wiring web search
+- [Analyse skill](skills/mizan/analyse/SKILL.md) — Hermes skill: deterministic pre-processor + judge procedure for points-of-interest reports
 
 ## Development
 
