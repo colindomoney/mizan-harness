@@ -44,5 +44,8 @@ to judge output quality, it belongs in v2.0; stop and flag it instead.
   the bank snapshot hash.
 
 Field-level detail for both schemas: [docs/schemas.md](docs/schemas.md).
+What each call actually sends (no tools, no web search, no reasoning control):
+[docs/call-path.md](docs/call-path.md). Deferred work goes in
+[docs/future-enhancements.md](docs/future-enhancements.md) rather than being started.
 Work is tracked in the **Mizan** team in Linear (`MIZ-*` issues; schema → MIZ-6/MIZ-9,
 gateway contract → MIZ-3).

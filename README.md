@@ -157,6 +157,8 @@ needed, or Vercel's `GET /v1/models`).
 - [Data schemas](docs/schemas.md) — field-level detail for `PromptRecord` and `RunRecord`
 - [Refusal heuristic](docs/refusal-heuristic.md) — how the answered/refused/hedged flag works
 - [Export](docs/export.md) — Excel workbook + Notion push for analysis and reporting
+- [Call path](docs/call-path.md) — what is (and isn't) sent to each model; web search and reasoning status
+- [Future enhancements](docs/future-enhancements.md) — deferred work and its scope, e.g. wiring web search
 
 ## Development
 
