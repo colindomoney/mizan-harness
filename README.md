@@ -194,6 +194,7 @@ needed, or Vercel's `GET /v1/models`).
 - [Call path](docs/call-path.md) — what is (and isn't) sent to each model; web search and reasoning status
 - [Future enhancements](docs/future-enhancements.md) — deferred work and its scope, e.g. wiring web search
 - [Analyse skill](skills/mizan/analyse/SKILL.md) — Hermes skill: deterministic pre-processor + judge procedure for points-of-interest reports
+- [Analyse approach](docs/analyse-approach.md) — peer-facing method note: what the analysis tool measures, how it shortlists, what the judge may claim, July results
 
 ## Development
 
