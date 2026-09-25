@@ -55,7 +55,15 @@ against a hand-labelled sample. Reports should use the distributions themselves.
 
 | Run | Jev model | QS | Cells | Flag agreement | Opener agreement | Mean residual |
 |---|---|---|---|---|---|---|
-| _to fill after the first live run_ | | | | | | |
+| 20260719T110322Z (July lineup, OpenRouter) | jev-1.13.0 | 1 | 285 | 207/285 (73%) | 188/285 (66%) | −0.00 … +0.03 |
+| 20260925T094449Z (Sept lineup, Vercel) | jev-1.13.0 | 1 | 338 | 276/338 (82%) | 244/338 (72%) | −0.00 … +0.03 |
+| 20260925T094455Z (Sept lineup, Vercel) | jev-1.13.0 | 1 | 336 | 277/336 (82%) | 231/336 (69%) | −0.01 … +0.03 |
+
+Mean residual is the per-model range. It stays within ±0.03 on every run, so on this bank the two
+stance orientations mirror each other and the classifier shows no measurable skew of its own. Most
+flag disagreements are heuristic `answered` → Jev `hedged`. That points to the provisional
+`HEDGE_AT` cut-off, which still needs a hand-labelled sample. Advocacy pairs (`genocase`,
+`profile`) produce the largest pair deltas by design: the prompt asks the model to argue a side.
 
 ## SDK notes (typesafe-sdk 0.7.1, read from the installed package)
 
