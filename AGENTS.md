@@ -11,17 +11,18 @@ prompt × model viewer, and a short published note (*Mizan: Preliminary Observat
 
 ## Scope guardrail — read before writing code
 
-**v1.0 captures model outputs only.** No scoring, no LLM-as-judge, no bias or quality rating.
-The only per-record annotation allowed is a heuristic *refusal/hedge flag* (did the model
-answer, refuse, or hedge) — never whether an answer is correct or biased. If a change starts
-to judge output quality, it belongs in v2.0; stop and flag it instead.
+**Capture stays judgement-free.** `gateway`, `runner`, `records` and `flags` capture model
+outputs only; the one per-record annotation there is the heuristic *refusal/hedge flag*.
+Classification of answers (including stance) lives **only** in `mizan.criteria`, runs over
+a finished capture, and writes to its own files — never back into `records.jsonl`. It
+reports distributions and differences, not verdicts on who is right.
 
 ## Code conventions
 
 - Python ≥ 3.12, `uv` for deps/venv (`uv sync`), `src/`-layout with the `mizan` package.
 - `ruff check` + `ruff format` (both must pass; CI enforces), `pytest` for tests.
 - Type hints everywhere; pydantic models with `extra="forbid"` for data schemas.
-- Tests never need a real API key — the gateway is always mocked (inject a fake `client`).
+- Tests never need a real API key — the gateway and Jev are always mocked (inject a fake `client`).
 - Secrets live in `.env` (gitignored, documented in `.env.example`); never commit keys.
 
 ## Module map & contracts
@@ -42,6 +43,11 @@ to judge output quality, it belongs in v2.0; stop and flag it instead.
   same capture-only guardrail as everywhere else. See [docs/export.md](docs/export.md).
 - Runs write to `runs/<timestamp>/` (gitignored): `records.jsonl` + `manifest.json` pinning
   the bank snapshot hash.
+- `mizan.criteria` — Jev (TypeSafe) criteria classifier over a finished run. Versioned
+  question set in `questions.py` (bump `QUESTION_SET_VERSION` on any wording change);
+  `classifier.classify_run` is an async, resumable batch writing
+  `runs/<ts>/criteria/<jev-model>/qs<N>.jsonl` with full distributions; `validate` compares
+  against the refusal flag and the analyse opener class. See [docs/criteria.md](docs/criteria.md).
 - `skills/mizan/analyse` — Hermes Agent skill (not part of the `mizan` package). Stdlib-only
   `scripts/mizan_prep.py` normalises `runs/*/records.jsonl` and computes every metric
   (`summary.md`/`candidates.json`/`normalised.json`, byte-deterministic); `SKILL.md` tells the
