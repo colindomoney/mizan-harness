@@ -1,4 +1,4 @@
-# Mizan v1.0 model registry.
+# Mizan model registry — lineup chosen for consumer reach (updated 2026-09-25).
 #
 # `id` is the canonical model slug (<provider>/<model>, Vercel AI Gateway
 # style) — records, viewer columns, and resume keys all use it, regardless of
@@ -9,10 +9,17 @@
 #   Vercel:     GET https://ai-gateway.vercel.sh/v1/models
 #   OpenRouter: GET https://openrouter.ai/api/v1/models (public, no key)
 
+# Note: Vercel lists xAI under `spacexai/`; `provider` stays "xai" (the vendor).
+
 [[models]]
-id = "openai/gpt-5.5"
+id = "openai/gpt-5.6-sol"
 provider = "openai"
-display_name = "GPT-5.5"
+display_name = "GPT-5.6 Sol"
+
+[[models]]
+id = "google/gemini-3.8-flash"
+provider = "google"
+display_name = "Gemini 3.8 Flash"
 
 [[models]]
 id = "anthropic/claude-sonnet-5"
@@ -20,18 +27,17 @@ provider = "anthropic"
 display_name = "Claude Sonnet 5"
 
 [[models]]
-id = "google/gemini-3.1-pro-preview"
-provider = "google"
-display_name = "Gemini 3.1 Pro (preview)"
-
-[[models]]
-id = "xai/grok-4.3"
-provider = "xai"
-display_name = "Grok 4.3"
-openrouter_id = "x-ai/grok-4.3"
-
-[[models]]
-id = "meta/llama-4-maverick"
+id = "meta/muse-spark-1.3"
 provider = "meta"
-display_name = "Llama 4 Maverick"
-openrouter_id = "meta-llama/llama-4-maverick"
+display_name = "Muse Spark 1.3"
+
+[[models]]
+id = "spacexai/grok-4.6"
+provider = "xai"
+display_name = "Grok 4.6"
+openrouter_id = "x-ai/grok-4.6"
+
+[[models]]
+id = "deepseek/deepseek-v4-pro"
+provider = "deepseek"
+display_name = "DeepSeek V4 Pro"

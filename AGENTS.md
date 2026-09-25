@@ -4,7 +4,7 @@
 
 Mizan (Arabic for *scale/balance*) is a discovery harness auditing how frontier LLMs handle
 Palestine-related queries. It runs a curated prompt bank across models (GPT, Claude, Gemini,
-Grok, Llama) through an **OpenAI-compatible gateway** (OpenRouter by default, Vercel AI
+Grok, Muse Spark, DeepSeek) through an **OpenAI-compatible gateway** (OpenRouter by default, Vercel AI
 Gateway as an alternative) and captures every prompt→model call as a
 structured, reproducible record on disk. The v1.0 deliverable is a completed bare-API run, a
 prompt × model viewer, and a short published note (*Mizan: Preliminary Observations*).

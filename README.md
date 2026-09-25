@@ -3,7 +3,7 @@
 [![CI](https://github.com/colindomoney/mizan-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/colindomoney/mizan-harness/actions/workflows/ci.yml)
 
 Mizan is a discovery harness that runs a curated bank of Palestine-related prompts across
-frontier LLMs (GPT, Claude, Gemini, Grok, Llama) through an OpenAI-compatible gateway —
+frontier LLMs (GPT, Claude, Gemini, Grok, Muse Spark, DeepSeek) through an OpenAI-compatible gateway —
 [OpenRouter](https://openrouter.ai) by default, the
 [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) as an alternative — capturing every
 prompt→model call as a structured, reproducible record.
@@ -33,7 +33,7 @@ cp .env.example .env    # then paste your OPENROUTER_API_KEY into .env
 ```
 
 To use the Vercel AI Gateway instead, set `VERCEL_AI_GATEWAY_API_KEY` in `.env` and pass
-`--gateway vercel` (smoke test: `./hello-gateway.sh vercel`). On Vercel, if the Llama call
+`--gateway vercel` (smoke test: `./hello-gateway.sh vercel`). On Vercel, if a cheaper model's call
 passes but GPT fails with a 403, the key works but the account is still being treated as
 free tier — premium models unlock once paid credit is visible.
 

@@ -11,7 +11,7 @@ REPO_REGISTRY = Path(__file__).parent.parent / "config" / "models.toml"
 def test_repo_registry_loads_v1_target_set() -> None:
     models = load_registry(REPO_REGISTRY)
     providers = {m.provider for m in models}
-    assert {"openai", "anthropic", "google", "xai", "meta"} <= providers
+    assert {"openai", "anthropic", "google", "xai", "meta", "deepseek"} <= providers
     assert all(isinstance(m, ModelEntry) for m in models)
     assert all("/" in m.id for m in models)  # gateway slugs are provider/model
 
