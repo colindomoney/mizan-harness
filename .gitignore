@@ -20,3 +20,6 @@ __pycache__/
 
 # OS
 .DS_Store
+**/.claude/autoharness/
+.claude/skills/*/.ledger.jsonl
+.claude/skills/*/.sidecar.json
